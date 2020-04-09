@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Intel SGX Practical Walkthrough</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<style>
+	.collapsible {
+	  background-color: #777;
+	  color: white;
+	  cursor: pointer;
+	  padding: 18px;
+	  width: 100%;
+	  border: none;
+	  text-align: left;
+	  outline: none;
+	  font-size: 15px;
+	}
+
+	.active, .collapsible:hover {
+	  background-color: #555;
+	}
+
+	.content {
+	  padding: 0 18px;
+	  display: none;
+	  overflow: hidden;
+	  background-color: #f1f1f1;
+	}
+	</style>
+</head>
+
+<body style="background-color: #f1f1f1;padding: 0 18px;">
+	
+<h1 align="center">Intel SGX Practical Walkthrough</h1>
+<p align="center">Prawar Poudel</p>
+<hr>
+<h1>Introduction</h1>
+<button type="button" class="collapsible"> <i>What this document is?</i></button>
+		<div class="content">
+				<p>
+					In this document, I will present the practical walkthrough that I performed while learning about Intel SGX. Pubicly available tutorials were followed during the creation of this and appropriate references will be properly cited as needed.
+				</p>
+			<h2>What is Intel SGX?</h2>
+				<p>
+					Intel SGX stands for <i>Intel Software Guard Extension</i>. This technology enables the applications to execute code and protect secrets in their own trusted environment, which gives the developer direct control over the application security. <a href="https://software.intel.com/en-us/videos/intel-software-guard-extensions-introductory-overview"><i>(link)</i></a>.
+				</p>
+				<p>
+					This means the application secrets are still protected when the application itself, Operating System and the BIOS is compromised. This way, even when the attacker has the full control over the system, the secrets are still protected.
+				</p>
+				<p><i>How is this achieved?</i></p>
+				<p>Intel creates isolated memory regions, called <i>enclaves</i> of code and data in the physical RAM of the system. These memory regions are non-addressable and are encrypted. These regions of memory are thus protected regions where an application can work without fear of exposing the secretss.</p>
+				<h3>Anatomy of Application</h3>
+					<p>
+						An Intel SGX application is built with two parts: (a) Trusted Part and (b) Untrusted Part.
+					</p>
+					<p>Majority of an application is the <i>Untrusted Part</i> of the code. When an application needs to work with a secret, it creates an enclave that is placed in trusted memory. Then a call to trusted function is made. This trusted function is created by the software developer to work inside the enclave. This function call runs the <i>Trusted Part</i> of the application which sees the enclave content, code and data, as clear text. The code can return from the <i>Trusted Part</i> to the <i>Untrusted Part</i>.
+					</p>
+		</div>
+	<button type="button" class="collapsible"> <i>Detecting And Enabling SGX</i></button>
+		<div class="content">
+			<p>Some of the pre-reqs for Intel SGX to work in a system are listed below. The contents are derived from <a href="https://software.intel.com/en-us/videos/detecting-and-enabling-intel-sgx">(link)</a>.</p>
+			<ul>
+				<li>The CPU must support the Intel SGX instructions.</li>
+				<li>The system BIOS must support Intel SGX.</li>
+				<li>Intel SGX must be enabled in the BIOS.</li>
+				<li>Intel Platform Software PSW must be installed in the system.</li>
+			</ul>
+			<p>Intel SGX is supported from the core machines of 6th Generation and onwards while Xeon E3 v6 for server processors.</p>
+			<p>For any application to make use of Intel SGX, application developer has to make use of this functionality in their code. Any application developer has to follow the listed sequence of actions:<a href="https://software.intel.com/en-us/videos/detecting-and-enabling-intel-sgx">(link)</a></p>
+			<ol>
+				<li>Detect if Intel SGX is supported by CPU and BIOS.</li>
+				<li>Determine if the Platform Software has already been installed. Install if necessary.</li>
+				<li>Determine if Intel SGX has been enabled on the system, and attempt software enable if it has not.</li>
+			</ol>
+			<p>Applications however follow a different sequence:</p>
+			<ol>
+				<li>Detect if Platform Software has been installed.</li>
+				<li>Determine if Intel SGX has been enabled and attempt software enable if it is not.</li>
+			</ol>
+			<p>
+				The BIOS in your system provided by the OEM may have support for Intel SGX in three modes:
+				<ul>
+					<li><b>Enabled:</b>SGX is available</li>
+					<li><b>Software Controlled:</b>SGX is enabled but should be available only when the software opts-in explicitely. This may require a reboot. SGX, however, cannot be disabled via software.</li>
+					<li><b>Disabled:</b>SGX is disabled and cannot be used by the applications. It can also not be enabled via software as in Software Controlled.</li>
+				</ul>
+			</p>
+			<p>
+				When Intel SGX is enabled, the processor reserves upto 128MB of memory in RAM as <i>Processor Reserved Memory (PRM)</i>. This memory is used to hold <i>Enclave Page Cache (EPC)</i>. This memory that is set aside for the use of EPC is not available for other applications. The Software Controlled Enabling allows for an opportunity where SGX is enabled, but does not consume the important RAM resource. If the user wants to make use of SGX, s/he can use software opt-in method.
+			</p>
+			<p>
+				The practical walk-through for detecting SGX in a system is presented in <a href="#checking1">(later section)</a>.
+			</p>
+	</div>
+	<button type="button" class="collapsible"> <i>Application Design with Intel SGX</i></button>
+		<div class="content">
+		<p>
+		As we saw earlier, an application enabled with Intel SGX has two parts: (a) Trusted Part and (b) Untrusted Part. The Trusted Part consists of the enclave while the Untrusted Part is the rest of the application. The enclaves are conisdered trusted because they cannot be modified once they are built. Any modification will be detected by the CPU and the enclave wont load. <a href="https://software.intel.com/en-us/videos/intel-sgx-application-design">(link)</a>
+		</p>
+		<p>
+			Inorder to design the application for Intel SGX, we need to partition our code, i.e. we need to identify which code belongs to enclave, which code belongs outside of it and how the trusted and untrusted part of the codes interact.
+		</p>
+		<p>
+			Specifically, following actions are to be done:
+		</p>
+		<ol>
+			<li>Identify the secrets: These are the data that should be protected from exposure.</li>
+			<li>Identify the source and sink of secrets: Map out the flow of secrets. This means identify where the secrets are coming from and where they will be going.</li>
+			<li>Identify the enclave boundary </li>
+			<li>Tailor the code for enclave.</li>
+		</ol>
+		<p>It is important to keep in mind that the enclaves should be destroyed when the secrets are no longer needed. Call to enclaves incure performance penalty. Thus while operating secrets, it is efficient to make a single call to enclave that does a lot of work than making several call that does small works.</p>
+	</div>
+	<button type="button" class="collapsible"> <i>Sealing Data</i></button>
+		<div class="content">
+		<p>
+			Sometimes the secret may need to be stored outside the enclave. This is because the enclave is destroyed under many different conditions, and the contents are lost. Thus CPU provide a mechanism called Data Sealing, which allows the data secrets to be stored in untrusted memory.
+		</p>
+		<p>
+			Storing to the untrusted memory is done by encryption of the data where the key is derived from the CPU. This sealed or encrypted data can only be decrypted on the same system it is encrypted.
+		</p>
+		<p>
+			Sealing can be done based on one of two policies: (a) MRENCLAVE (b) MRSIGNER. Choice of these policies affect the derivation of encryption key.
+		</p>
+		<p>
+			<b>MRENCLAVE:</b> Derives key that is specific to that enclave on that system. That exact enclave on that particular computer can only unseal the data.
+		</p>
+		<p>
+			<b>MRSIGNER:</b> Derives key that is specific to the developer's signing key on that system. This allows the data to be unsealed by another enclave that is created by the same software vendor on the same system. This allows the data to read by later versions or builds of the enclave and application.
+		</p>
+	</div>
+	<button type="button" class="collapsible"> <i>Debugging Applications</i></button>
+		<div class="content">
+		<p>
+			Use of Intel SGX debugger can be done for debugging. However, enclaves that are built in debug mode should never be deployed. It should be built in release mode for deployment. But this build cannot be debugged under any circumstance. Inorder to debug, the Intel SGX debugger should be selected in the Project Settings, otherwise the enclave code will be skipped by other normal debugger.
+		</p>
+	</div>
+<hr>
+<h1>Enclave Definition Language</h1>
+	<button type="button" class="collapsible"> <i>EDL</i></button>
+		<div class="content">
+		<p>
+			One of the fundamentals of Intel SGX is that the enclave secret can only be accessed by code that is inside the enclave. An interface function is need to execute the code.
+		</p>
+		<p>
+			Each enclave or the trusted code has one or more entry points called <i>enclave calls</i> or the <i>ECALLS</i>. These provide entry points to the enclaves from the untrusted application code. An enclave can also have <i>outside calls </i>  or <i>OCALLS</i> which allow enclave functions to call out to the untrusted application and return to the enclave. These <i>ECALLS</i> and <i>ECALLS</i> make an interface for the enclave.
+		</p>
+		<p>
+			These functions are not, however, run directly by the application. Special CPU instructions are required to make these calls. <a href="https://software.intel.com/en-us/videos/introduction-to-the-enclave-definition-language-intel-sgx">(link)</a>. The SDK abstracts these low level details. A tool called <i>EDGER8R</i> automatically generates proxy functions named after the <i>ECALLS</i> and <i>OCALLS</i>. This makes it easy for applications to invoke them as a C function. For the generation of these proxy functions, the <i>EDGER8R</i> reads an <i>Enclave Definition Language(EDL)</i> file.
+		</p>
+		<p>
+			An <i>EDL</i> file is similar to the C- header file with function prototypes. This file also contains two sections: Trusted Section and Untrusted Section. The trusted section contains the definition of ECALLS functions, and OCALLS functions are defined in the untrusted section.
+		</p>
+		<p>
+			All the ECALLS  that are to be invoked by the untrusted applications should be defined as <i>public</i>. Every enclave must have at least one public ECALL. Any function in the trusted section of the EDL file without the keyword public can only be executed from within another OCALL.
+		</p>
+		<p>
+			When an ECALL or OCALL is made, the parameters are marshalled between the trusted and untrusted memory. Thus, changes made inside the ECALL or OCALL is not propagated back to the caller. Parameter passed by value means marshalling is one way. But in case of parameter passed by reference, a complete description of the marshalling should be done. Each pointer parameter must be preceeded by  direction describing keywords in a square brackets. The number of elements to be marshalled can also be mentioned, which is optional, however. Keyword [in] before the parameter name means the data parameter should be marshalled into the ECALL or OCALL while [out] means the data should be marshalled out of the ECALL or OCALL back to the calling function. If the data marshalling is needed in both the directions, [in, out] can be used.
+		</p>
+		<p>
+			By default, only one element is supposed to be marshalled of the size indicated by the parameter type in a ECALL or OCALL. To marshall more data, additional parameter value count can be supplied, as [in, count = 10]. If the number of data item is not certain during compile time, another parameter variable can be used for the count value as shown below.
+		</p>
+		<p>
+			When passing string however, the count value should be replaced by the keyword string.
+		</p>
+		<pre>
+			<code>
+				trusted{
+				/*ECALLS definition follows*/
+
+				/*
+					Here data items are marshalled into the function.
+					Items marshalled are 10 int32_t items
+				*/
+				public int my_ecall([in, count = len] int32_t* my_array, size_t len);
+
+				/*
+					Following ecall can only be called by another OCALL
+				*/
+				int ecall_private(int val);
+
+				/*
+					Illustration of string parameter
+				*/
+				public int my_ecall2([in, string] char* name);
+			}
+			</code>
+		</pre>
+
+		<p>
+			Sometimes it is necessary to pass data of void* type to the ECALL or OCALL. The tricky thing about void* type data is that the size is not known. Thus the total size of the data to be marshalled cannot be calculated. Thus EDL provides another keyword called <i>size</i>. This keyword parameter <i>size</i> indicates the size of each data element and combined with <i>count</i>, it helps to compute the total size of the data to be marshalled.
+			<pre>
+				<code>
+				/*
+					here 32 8-byte values will be marshalled into the ECALL
+					both count and size parameter can be represented by a function parameter variable
+				*/
+				public int my_ecall([in, count = 32, size = 8] void* my_array);
+				</code>
+			</pre>
+		</p>
+
+		<p>
+			Only public ECALL can be called by untrusted functions. These ECALLs are called the <i>root ECALLs</i>.
+		</p>
+		<p>
+			By default, OCALLs are not allowed to call any ECALL. However, the ECALL that are not declared with keyword <i>public</i> can be called from OCALL. However, for this to happen the OCALL definition must have the name of ECALLs that it is allowed to call. This is done using a key word <i>allow</i> as shown in code below:
+		</p>
+		<pre>
+			<code>
+				trusted{
+				/*ECALLS definition follows*/
+
+				/*
+					Here data items are marshalled into the function.
+					Items marshalled are 10 int32_t items
+				*/
+				public int my_ecall([in, count = len] int32_t* my_array, size_t len);
+
+				/*
+					Following ecall can only be called by another OCALL
+				*/
+				int ecall_private(int val);
+
+				/*
+					Illustration of string parameter
+				*/
+				public int my_ecall2([in, string] char* name);
+			}
+				untrusted{
+				/*define OCALLS here*/
+
+				/*
+					Following OCALL can only call ecall_private() ECALL
+				*/
+				size_t get_msg() allow(ecall_private);
+			}
+			</code>
+		</pre>
+	</div>
+
+<hr>
+<h1>Getting Started</h1>
+	<p>
+		The following contents are derived from the official Intel Webpage at <a href="https://software.intel.com/en-us/articles/getting-started-with-sgx-sdk-for-windows">(link)</a>. Please follow that <a href="https://software.intel.com/en-us/articles/getting-started-with-sgx-sdk-for-windows">link</a> for official tutorial. The tutorial is based on MS Visual Studio 2015 on a 64-bit Windows OS. The setting for this practical walkthrough is based on MS Visual Studio 2017 on a 64-bit Windows OS.
+	</p>
+	<button type="button" class="collapsible"> <a name="checking1"><i>Checking SGX Availability in Computer</i></a></button>
+		<div class="content">
+			<p>
+				The first thing we need to do is to find if the CPU we have supports Intel SGX. For this please find the generation and family name of the processor. For me, the processor was <b>Core i7-6700</b>. This means, it is i7 processor. 6 in 6700 indicates the processor is 6th generation Intel processor. After you have found these information, go to <a href="https://ark.intel.com/">www.ark.intel.com</a> and search for the processor type. After you have located your processor, at the bottom of the specifications page for that processor, you should see a section for <b>Security and Reliability</b>features. Intel SGX is one of the security feature. If Intel SGX is available, it should be mentioned as <b>Yes with Intel ME</b>.
+			</p>
+			<p>
+				We will study about Intel ME or Management Engine in a different series of tutorial.
+			</p>
+			<p>
+				The next step is to see if Intel SGX is supported in BIOS. You can manually check to see by going to the BIOS menu for this procedure. Please follow the tutorial at <a href="https://software.intel.com/en-us/articles/getting-started-with-sgx-sdk-for-windows">(this link)</a>. Another way is by using Intel provided tool. Please follow the procedure at <a href="https://software.intel.com/en-us/articles/properly-detecting-intel-software-guard-extensions-in-your-applications">(this link)</a> for properly detecting that Intel SGX is available.
+			</p>
+			<p>
+				In order to proper detect the availability and support for Intel SGX, the application developer should perform detection during the installation phase (i.e. when the final product is rolled out) and from within the application itself. In this research, we will focus on the checking from application rather than from the installer.
+			</p>
+			<p>
+				Following are the steps that are to be performed after determining that SGX is supported in the system:
+				<ol>
+					<li>
+						Check if PSW is installed. PSW is the Platform Software Package. PSW includes:
+						<ul>
+							<li>Runtime Libraries</li>
+							<li>Services to support and maintain trusted compute block on end user system and manage critical Intel SGX operations as SGX.</li>
+							<li>Interface to platform services such as the trusted time and monotonic counters.</li>
+						</ul>
+						<ul>
+							Based on installation:
+							<li>If not installed, the part of application that supports the non-SGX code should be run.</li>
+							<li>If installed, go to step 2.</li>
+						</ul>
+					</li>
+					<li>
+						Call <code>sgx_enable_device()</code> to ensure that the software opt-in has occured. Check the return value to determine whats next.
+						<ul>
+							<li>If the result indicates SGX is enabled, application may execute SGX code.</li>
+							<li>If not and the code indicates a reboot is required, the indicated manual actions should be performed.</li>
+							<li>If SGX could not be enabled, non-SGX code path should be used.</li>
+						</ul>
+					</li>
+				</ol>				
+			</p>
+			<p>
+				Since we are yet to install the software components, we will follow-up in this after we make installation.
+			</p>
+		</div>
+<hr>
+<h1>Installation</h1>
+		<p>
+			This section shows the installation of the important components required for software developement with Intel SGX. At this point of time, we know that Intel SGX can be enabled and used in our CPU with Intel Management Engine (Intel ME). In the follow section, we will present installation of all the required softwares for Intel SGX to work. The material is derived from <a href="https://software.intel.com/en-us/articles/getting-started-with-sgx-sdk-for-windows">(this link)</a>.
+		</p>
+		<button type="button" class="collapsible"> <i>Intel Management Engine</i></button>
+		<div class="content">
+			<p>
+				The required softwares for installation can be found at <a href="https://downloadcenter.intel.com/download/28679/Intel-Management-Engine-Driver-for-Windows-8-1-and-Windows-10">this link.</a> Download the archived file and extract the contents.
+			</p>
+			<p>
+				Inside the folder named <i>ME_SW_MSI</i>, there should be <i>SetupME.exe</i>. Double click this installer, and follow the default prompts to get this installed. After the process is complete, you can go to the <i>Control Panel->Program and Features</i> to the Intel Management Engine Components.
+			</p>
+		</div>
+		<button type="button" class="collapsible"> <i>MS Visual Studio</i></button>
+		<div class="content">
+			<p>
+				For Windows machine, the suggested installation is MS Visual Studio Professional Edition or higher. This might not be an option for non-acedamic personal purpose. However, any student can contant their university to provide them with the professional edition of MS Visual Studio.
+			</p>
+			<p>
+				I had my hands on at MS Visual Studio Enterprise Edition 2017 for this research.
+			</p>
+		</div>		
+		<button type="button" class="collapsible"> <i>Intel SGX SDK and PSW</i></button>
+		<div class="content">
+			<p>
+				To install the Intel SGX Software Development Kit (SDK) and PSW, you must register and obtain the installation from the Intel Website at <a href="https://registrationcenter.intel.com/en/forms/?productid=2614"></a>. It should not take more than 5 minutes to get everything going.
+			</p>
+			<p>
+				Please make sure that you have installed Visual Studio before installing SGX SDK.
+			</p>
+			<p>
+				The .exe files downloaded can be used for installation of the SDK and PSW.
+			</p>
+		</div>
+
+	<!-- following script handles the responsiveness -->
+	<script>
+		var coll = document.getElementsByClassName("collapsible");
+		var i;
+
+		for (i = 0; i < coll.length; i++) {
+		  coll[i].addEventListener("click", function() {
+		    this.classList.toggle("active");
+		    var content = this.nextElementSibling;
+		    if (content.style.display === "block") {
+		      content.style.display = "none";
+		    } else {
+		      content.style.display = "block";
+		    }
+		  });
+		}
+	</script>
+</body>
+</html>
