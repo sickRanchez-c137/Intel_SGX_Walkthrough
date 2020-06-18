@@ -8,7 +8,7 @@
 	  background-color: #777;
 	  color: white;
 	  cursor: pointer;
-	  padding: 18px;
+	  padding: 2px;
 	  width: 100%;
 	  border: none;
 	  text-align: left;
@@ -34,7 +34,9 @@
 <h1 align="center">Intel SGX Practical Walkthrough</h1>
 <p align="center">Prawar Poudel</p>
 <hr>
+					<hr>
 <h1>Introduction</h1>
+					<hr>
 <button type="button" class="collapsible"> <i>What this document is?</i></button>
 		<div class="content">
 				<p>
@@ -56,6 +58,7 @@
 					<p>Majority of an application is the <i>Untrusted Part</i> of the code. When an application needs to work with a secret, it creates an enclave that is placed in trusted memory. Then a call to trusted function is made. This trusted function is created by the software developer to work inside the enclave. This function call runs the <i>Trusted Part</i> of the application which sees the enclave content, code and data, as clear text. The code can return from the <i>Trusted Part</i> to the <i>Untrusted Part</i>.
 					</p>
 		</div>
+					<hr>
 	<button type="button" class="collapsible"> <i>Detecting And Enabling SGX</i></button>
 		<div class="content">
 			<p>Some of the pre-reqs for Intel SGX to work in a system are listed below. The contents are derived from <a href="https://software.intel.com/en-us/videos/detecting-and-enabling-intel-sgx">(link)</a>.</p>
@@ -92,6 +95,7 @@
 				The practical walk-through for detecting SGX in a system is presented in <a href="#checking1">(later section)</a>.
 			</p>
 	</div>
+					<hr>
 	<button type="button" class="collapsible"> <i>Application Design with Intel SGX</i></button>
 		<div class="content">
 		<p>
@@ -111,6 +115,7 @@
 		</ol>
 		<p>It is important to keep in mind that the enclaves should be destroyed when the secrets are no longer needed. Call to enclaves incure performance penalty. Thus while operating secrets, it is efficient to make a single call to enclave that does a lot of work than making several call that does small works.</p>
 	</div>
+					<hr>
 	<button type="button" class="collapsible"> <i>Sealing Data</i></button>
 		<div class="content">
 		<p>
@@ -129,6 +134,7 @@
 			<b>MRSIGNER:</b> Derives key that is specific to the developer's signing key on that system. This allows the data to be unsealed by another enclave that is created by the same software vendor on the same system. This allows the data to read by later versions or builds of the enclave and application.
 		</p>
 	</div>
+					<hr>
 	<button type="button" class="collapsible"> <i>Debugging Applications</i></button>
 		<div class="content">
 		<p>
@@ -240,10 +246,13 @@
 	</div>
 
 <hr>
+					<hr>
 <h1>Getting Started</h1>
+					<hr>
 	<p>
 		The following contents are derived from the official Intel Webpage at <a href="https://software.intel.com/en-us/articles/getting-started-with-sgx-sdk-for-windows">(link)</a>. Please follow that <a href="https://software.intel.com/en-us/articles/getting-started-with-sgx-sdk-for-windows">link</a> for official tutorial. The tutorial is based on MS Visual Studio 2015 on a 64-bit Windows OS. The setting for this practical walkthrough is based on MS Visual Studio 2017 on a 64-bit Windows OS.
 	</p>
+					<hr>
 	<button type="button" class="collapsible"> <a name="checking1"><i>Checking SGX Availability in Computer</i></a></button>
 		<div class="content">
 			<p>
@@ -289,10 +298,13 @@
 			</p>
 		</div>
 <hr>
+					<hr>
 <h1>Installation</h1>
+					<hr>
 		<p>
 			This section shows the installation of the important components required for software developement with Intel SGX. At this point of time, we know that Intel SGX can be enabled and used in our CPU with Intel Management Engine (Intel ME). In the follow section, we will present installation of all the required softwares for Intel SGX to work. The material is derived from <a href="https://software.intel.com/en-us/articles/getting-started-with-sgx-sdk-for-windows">(this link)</a>.
 		</p>
+					<hr>
 		<button type="button" class="collapsible"> <i>Intel Management Engine</i></button>
 		<div class="content">
 			<p>
@@ -302,6 +314,7 @@
 				Inside the folder named <i>ME_SW_MSI</i>, there should be <i>SetupME.exe</i>. Double click this installer, and follow the default prompts to get this installed. After the process is complete, you can go to the <i>Control Panel->Program and Features</i> to the Intel Management Engine Components.
 			</p>
 		</div>
+					<hr>
 		<button type="button" class="collapsible"> <i>MS Visual Studio</i></button>
 		<div class="content">
 			<p>
@@ -311,6 +324,7 @@
 				I had my hands on at MS Visual Studio Enterprise Edition 2017 for this research.
 			</p>
 		</div>		
+					<hr>
 		<button type="button" class="collapsible"> <i>Intel SGX SDK and PSW</i></button>
 		<div class="content">
 			<p>
@@ -322,7 +336,161 @@
 			<p>
 				The .exe files downloaded can be used for installation of the SDK and PSW.
 			</p>
+			<p>
+				The installation can be verified by looking into the control panel's program and features to see if SGX and PSW can be found listed in there.
+			</p>
+		</div>		
+					<hr>
+		<button type="button" class="collapsible"> <i>Opening First Solution</i></button>
+		<div class="content">
+			<p>
+				Now that everything is set up properly, let us get started with opening and running an example solution that comes with the installation of SGX. Following are listed following <a href="https://software.intel.com/content/www/us/en/develop/articles/getting-started-with-sgx-sdk-for-windows.html">this link</a>
+			</p>
+			<p>
+				<ol>
+					<li>
+						Open Visual Studio.
+					</li>
+					<li>
+						Go to File>Open>Project/Solution.
+					</li>
+					<li>
+						Navigate to the directory that has the sample examples. C:\Program Files (86)\Intel\IntelSGXSDK\src\SampleEnclave
+					</li>
+					<li>
+						Click on SimpleEnclave.sln to open the solution. But, make sure that Visual Studio is open with Admin previleges.
+					</li>
+					<li>
+						Set the Solution Configuration to Debug mode. Solution Configuration can be changed through a drop down menu below the menu bar next to Solution Platform drop down list.
+					</li>
+					<li>
+						The project contains two applications, <b>App</b> and <b>Enclave</b>. We have to make sure the compiler and debugger settings are properly set. Go to <b>Project>Properties</b>. The option in Platform ToolSet should be Visual Studio 2017 (as it was already for me). Go to debugging, and make sure  <b>Intel SGX Debugger</b> is selected.
+					</li>
+					<li>
+						Inorder to build the simple enclave, Press <b>Ctrl+Shift+B</b>.
+					</li>
+					<li>
+						<b>Possible Error</b>: For me, I had to retarget both the project due to the Windows SDK mismatch. Inorder to retarget the project, right click the name of project in Solution Explorer and select Retarget Project option for each of the projects. This fixed the error.
+					</li>
+					<li>
+						Following is the sample run:
+					</li>
+					<li>
+						<img src="imgs/1run_1.PNG" align="center">
+					</li>
+					<li>
+						This verifies that Intel SGX is installed and configured successfully.
+					</li>
+					<hr>
+				</ol>
+			</p>
 		</div>
+		<hr>
+		<hr>
+		<h1>Project Creation</h1>
+		<button type="button" class="collapsible"> <i>Creating Own First Project</i></button>
+		<div class="content">
+			<p>
+				The major steps in creating an enclave projects are:
+				<ul>
+					<li>Creating Intel SGX Project</li>
+					<li>Configure Enclave Settings</li>
+					<li>Import EDL file into untrusted application project</li>
+				</ul>
+			</p>
+			<p>
+				In order to create a new enclave project, follow the steps listed below:
+				<ul>
+					<li>
+						Go to File menu. Select New>Project. This will open a new window. Select <b>Intel SGX Enclave Project</b> from the list under <b>Visual C++</b>.
+					</li>
+					<li>
+						Name the project and select the folder for project creation.
+					</li>
+					<li>
+						Click Next and check the settings for the enclave. For the project type, it requires us to choose of the two options: Enclave or Enclave Library. Snce we are building an enclave project, we will select Enclave.
+					</li>
+					<li>
+						If you have your provate key, you can navigate to your PEM file as well. Since I do not have any provate key as of this moment, Visual Studio will create one for me. VS provided key for enclave for one step signing process is supported for ony Debug, Simulation and Pre Release mode. For release mode, you must provide a key and use two step signing process.
+					</li>
+					<li>
+						Click Finish once done. The project will be created.
+					</li>
+					<li>
+						Now we need to manage the settings for Enclave. These settings will be saved in a Enclave Configuration File (ECF). In order to change the settings, right click on the project name in soluton explorer. Select Intel SGX Configuration > Enclave Settings. This will open a window. This includes settings like Product ID, ISV SVN, Thread Stack Size, Global Heap Size, Thread Number, Thread Bound Policy. We will leave them as default as we do not know much about them.
+					</li>
+					<li>
+						In the same window as above, selecting Advanced will open a new window. It is here you can select settings such as to bar debugging. Other settings are for future usage. We will leave them as default unchanged. Let us click OK on both advanced and basic settings.
+					</li>
+					<li>
+						An enclave file \<project_name.edl\> is already created in Source File folder. This is where we will add our ECALLS and OCALLS
+					</li>
+					<li>
+						Now we can go ahead with our project coding. We will discuss about it in below section after some time. But first let us talk about signing. (The first coding example will be followed from <a href="https://ayeks.de/post/2016-01-05-create-and-execute-an-intel-sgx-enclave/">this link</a>.)
+					</li>
+					<li>
+						<b>Signing:</b> Signing an enclave is a process that produces a signature containing enclave properties. Once an enclave is signed, any modifications can be detected and can be blocked by Intel SGX at load times. For Simulation, Debug and Prerelease, you can use one-step signing: using private key in the development platform. But for release, two-step signing must be used.
+						<ul>
+							<li>
+								One-Step Signing: Signing an enclave using provate key on build platform/system
+							</li>
+							<li>
+								Two-Step Signing: Signing an enclave using a private key stored in a secure facility or platform.
+								<ul>
+									<li>
+										Generate enclave signing material and take the material to  the signing facility/platform
+									</li>
+									<li>
+										At the signing facility/platform, sign the file containing the enclave signing material.
+									</li>
+									<li>
+										Take the resulting file (.hex) back to buiild platform.
+									</li>
+									<li>
+										On the build platform, sign the enclave using signature file and public key.
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</p>
+		</div>
+		<hr>
+		<button type="button" class="collapsible"> <i>Coding the First Project</i></button>
+		<div class="content">
+			<p>
+				Here we will create our first Enclave project. The contents are derived from <a href="https://ayeks.de/post/2016-01-05-create-and-execute-an-intel-sgx-enclave/">this link.</a>
+			</p>
+			<p>
+				As of this moment, we have a solution that has an enclave project. But we have not define anything inside the project, so let us define some functions and make them OCALLS or ECALLS. All the examples are derived from <a href="https://ayeks.de/post/2016-01-05-create-and-execute-an-intel-sgx-enclave/">this link</a>.
+			</p>
+			<p>
+				In the enclave source file, <i>Enclave_1.cpp</i>, we will create following functions:
+				<ul>
+					<li>
+						enclaveChangeBuffer(): This function copies a constant string to the passed in char buffer
+					</li>
+					<li>
+						enclaveStringSave(): This function copies the passed character buffer to the string in the file
+					</li>
+					<li>
+						enclaveStringSave(): This function copies the string saved to the buffer passed to the function
+					</li>
+					<li>
+						enclaveSaveInt(): copies the input int passed to the global int in the file
+					</li>
+					<li>
+						enclaveLoadInt(): returns the int from above function.
+					</li>
+				</ul>
+				All our functions are ECALLS here. So in the .edl file we will declare all of them in ECALLS.
+			</p>
+		</div>
+		<hr>
+		<hr>
+
+
 
 	<!-- following script handles the responsiveness -->
 	<script>
